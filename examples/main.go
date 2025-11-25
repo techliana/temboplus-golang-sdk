@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/techliana/temboplus"
+	"github.com/techliana/temboplus-golang-sdk"
 	// Replace with actual import path
 )
 

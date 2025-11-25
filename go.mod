@@ -1,4 +1,4 @@
-module github.com/techliana/temboplus
+module github.com/techliana/temboplus-golang-sdk
 
 go 1.24.6
 

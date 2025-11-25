@@ -16,7 +16,7 @@ A comprehensive Go SDK for integrating with the TemboPlus payment platform, enab
 ## Installation
 
 ```bash
-go get github.com/yourusername/temboplus-go
+go get github.com/techliana/temboplus-golang-sdk
 ```
 
 ## Quick Start
