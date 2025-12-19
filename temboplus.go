@@ -388,11 +388,12 @@ const (
 
 // Constants for supported channels
 const (
-	ChannelTZTigoC2B   = "TZ-TIGO-C2B"
-	ChannelTZAirtelC2B = "TZ-AIRTEL-C2B"
-	ServiceTZTigoB2C   = "TZ-TIGO-B2C"
-	ServiceTZAirtelB2C = "TZ-AIRTEL-B2C"
-	ServiceTZBankB2C   = "TZ-BANK-B2C"
+	ChannelTZTigoC2B    = "TZ-TIGO-C2B"
+	ChannelTZHalotelC2B = "TZ-HALOTEL-C2B"
+	ChannelTZAirtelC2B  = "TZ-AIRTEL-C2B"
+	ServiceTZTigoB2C    = "TZ-TIGO-B2C"
+	ServiceTZAirtelB2C  = "TZ-AIRTEL-B2C"
+	ServiceTZBankB2C    = "TZ-BANK-B2C"
 )
 
 // Helper functions
@@ -402,6 +403,7 @@ func GetSupportedChannels() []string {
 	return []string{
 		ChannelTZTigoC2B,
 		ChannelTZAirtelC2B,
+		ChannelTZHalotelC2B,
 	}
 }
 
