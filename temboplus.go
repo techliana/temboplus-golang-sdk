@@ -517,6 +517,99 @@ func BuildCollectionRequest(phoneNumber string, channel string, amount float64, 
 	}
 }
 
+// ListWallets retrieves all wallets associated with the account
+func (c *Client) ListWallets(ctx context.Context) ([]Wallet, error) {
+	url := c.baseURL + EndpointWalletList
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set required headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-account-id", c.accountID)
+	req.Header.Set("x-secret-key", c.secretKey)
+	req.Header.Set("x-request-id", generateRequestID())
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var apiErr APIError
+		if err := json.Unmarshal(body, &apiErr); err == nil && apiErr.StatusCode != 0 {
+			return nil, apiErr
+		}
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var wallets []Wallet
+	if err := json.Unmarshal(body, &wallets); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return wallets, nil
+}
+
+// GetWalletBalance retrieves the balance of a specific wallet by account number
+func (c *Client) GetWalletBalance(ctx context.Context, accountNo string) (*CollectionBalanceResponse, error) {
+	url := c.baseURL + EndpointWalletBalance
+
+	reqBody := WalletBalanceRequest{
+		AccountNo: accountNo,
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set required headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-account-id", c.accountID)
+	req.Header.Set("x-secret-key", c.secretKey)
+	req.Header.Set("x-request-id", generateRequestID())
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var apiErr APIError
+		if err := json.Unmarshal(body, &apiErr); err == nil && apiErr.StatusCode != 0 {
+			return nil, apiErr
+		}
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var balance CollectionBalanceResponse
+	if err := json.Unmarshal(body, &balance); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &balance, nil
+}
+
 // PayWalletToBank is a convenience wrapper for bank payouts (TZ-BANK-B2C)
 // Note: The API uses the same endpoint as wallet-to-mobile; msisdn should be in the format <BIC>:<ACCOUNT NUMBER>
 func (c *Client) PayWalletToBank(ctx context.Context, req WalletToMobileRequest) (*MobileMoneyCollectionResponse, error) {

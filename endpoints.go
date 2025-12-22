@@ -14,10 +14,15 @@ const (
 	// Wallet operations
 	EndpointWalletCollectionBalance   = "/tembo/v1/wallet/collection-balance"
 	EndpointWalletCollectionStatement = "/tembo/v1/wallet/collection-statement"
+	
 	EndpointWalletMainBalance         = "/tembo/v1/wallet/main-balance"
 	EndpointWalletMainStatement       = "/tembo/v1/wallet/main-statement"
 
 	// Payments
 	EndpointPaymentWalletToMobile = "/tembo/v1/payment/wallet-to-mobile"
 	EndpointPaymentStatus         = "/tembo/v1/payment/status"
+
+	// Wallet management
+	EndpointWalletList    = "/tembo/v1/wallet"
+	EndpointWalletBalance = "/tembo/v1/wallet/balance"
 )
