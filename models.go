@@ -48,12 +48,12 @@ type APIError struct {
 
 func (e APIError) Error() string {
 	if e.Reason != "" {
-		return fmt.Sprintf("TemboPlus API Error [%d]: %s", e.StatusCode, e.Reason)
+		return fmt.Sprintf("API Error [%d]: %s %s", e.StatusCode, e.Reason, e.Message)
 	}
 	if e.Message != "" {
-		return fmt.Sprintf("TemboPlus API Error [%d]: %s", e.StatusCode, e.Message)
+		return fmt.Sprintf("API Error [%d]: %s %s", e.StatusCode, e.Message, e.Reason)
 	}
-	return fmt.Sprintf("TemboPlus API Error [%d]", e.StatusCode)
+	return fmt.Sprintf("Api Error [%d]", e.StatusCode)
 }
 
 // CollectionBalanceResponse represents the response for collection account balance

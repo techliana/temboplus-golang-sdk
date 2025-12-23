@@ -55,9 +55,9 @@ func NewClient(config ClientConfig) *Client {
 
 func (e Error) Error() string {
 	if e.Message != "" {
-		return fmt.Sprintf("TemboPlus API Error [%s]: %s", e.StatusCode, e.Message)
+		return fmt.Sprintf("API Error [%s]: %s", e.StatusCode, e.Message)
 	}
-	return fmt.Sprintf("TemboPlus API Error: %s", e.StatusCode)
+	return fmt.Sprintf("API Error: %s", e.StatusCode)
 }
 
 // generateRequestID creates a unique request ID for the x-request-id header
