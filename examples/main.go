@@ -231,7 +231,7 @@ func mobileMoneyCollectionExample(client *temboplus.Client) {
 	request := temboplus.MobileMoneyCollectionRequest{
 		MSISDN:          temboplus.FormatMSISDN("0715123456"),                        // Will format to 255715123456
 		Channel:         temboplus.ChannelTZTigoC2B,                                  // Tigo Tanzania
-		Amount:          10000.0,                                                     // Amount in TZS
+		Amount:          10000,                                                       // Amount in TZS
 		Narration:       "Payment for online purchase - Order #123",                  // Description
 		TransactionRef:  temboplus.GenerateTransactionRef("ORDER"),                   // Your unique reference
 		TransactionDate: temboplus.FormatTransactionDate(time.Now()),                 // Current timestamp
@@ -450,7 +450,7 @@ func validateAndCollect(client *temboplus.Client) {
 
 	phoneNumber := "0715123456"
 	channel := temboplus.ChannelTZTigoC2B
-	amount := 15000.0
+	amount := 15000
 
 	// Validate inputs before making API call
 	formattedMSISDN := temboplus.FormatMSISDN(phoneNumber)
@@ -490,7 +490,7 @@ func batchCollectionExample(client *temboplus.Client) {
 	customers := []struct {
 		phone   string
 		channel string
-		amount  float64
+		amount  int
 		desc    string
 	}{
 		{"0715111111", temboplus.ChannelTZTigoC2B, 5000, "Customer A payment"},

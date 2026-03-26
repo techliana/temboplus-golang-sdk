@@ -9,7 +9,7 @@ import (
 type MobileMoneyCollectionRequest struct {
 	MSISDN          string  `json:"msisdn"`          // Phone number in format 255XXX123456
 	Channel         string  `json:"channel"`         // MNO channel (TZ-TIGO-C2B, TZ-AIRTEL-C2B)
-	Amount          float64 `json:"amount"`          // Amount to collect
+	Amount          int     `json:"amount"`          // Amount to collect
 	Narration       string  `json:"narration"`       // Description/narration
 	TransactionRef  string  `json:"transactionRef"`  // Your system reference
 	TransactionDate string  `json:"transactionDate"` // Date in format YYYY-MM-DD HH:mm:ss

@@ -503,7 +503,7 @@ func ValidateMSISDN(msisdn string) error {
 }
 
 // BuildCollectionRequest is a helper function to build a properly formatted collection request
-func BuildCollectionRequest(phoneNumber string, channel string, amount float64, description string, callbackURL string) MobileMoneyCollectionRequest {
+func BuildCollectionRequest(phoneNumber string, channel string, amount int, description string, callbackURL string) MobileMoneyCollectionRequest {
 	now := time.Now()
 
 	return MobileMoneyCollectionRequest{
