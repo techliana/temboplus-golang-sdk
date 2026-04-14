@@ -1,3 +1,4 @@
 examples/.env
 examples/tmp/
 examples/example.go
+tmp/main

@@ -8,7 +8,7 @@ import (
 // MobileMoneyCollectionRequest represents a mobile money collection request
 type MobileMoneyCollectionRequest struct {
 	MSISDN          string  `json:"msisdn"`          // Phone number in format 255XXX123456
-	Channel         string  `json:"channel"`         // MNO channel (TZ-TIGO-C2B, TZ-AIRTEL-C2B)
+	Channel         string  `json:"channel"`         // MNO channel (TZ-TIGO-C2B, TZ-AIRTEL-C2B, TZ-HALOTEL-C2B, TZ-VODACOM-C2B)
 	Amount          int     `json:"amount"`          // Amount to collect
 	Narration       string  `json:"narration"`       // Description/narration
 	TransactionRef  string  `json:"transactionRef"`  // Your system reference
@@ -136,7 +136,7 @@ type CollectionStatementEntry struct {
 type WalletToMobileRequest struct {
 	CountryCode     string  `json:"countryCode"`     // e.g., TZ
 	AccountNo       string  `json:"accountNo"`       // Source wallet account number
-	ServiceCode     string  `json:"serviceCode"`     // TZ-TIGO-B2C, TZ-AIRTEL-B2C
+	ServiceCode     string  `json:"serviceCode"`     // TZ-AIRTEL-B2C, TZ-VODACOM-B2C, TZ-TIGO-B2C, TZ-HALOTEL-B2C, TZ-BANK-B2C, KE-SAFARICOM-B2C
 	Amount          float64 `json:"amount"`          // Amount to transfer
 	MSISDN          string  `json:"msisdn"`          // Recipient MSISDN
 	Narration       string  `json:"narration"`       // Transfer narration
@@ -161,4 +161,21 @@ type Wallet struct {
 // WalletBalanceRequest represents the request body for fetching a wallet balance
 type WalletBalanceRequest struct {
 	AccountNo string `json:"accountNo"` // Account number of the wallet to retrieve balance
+}
+
+// WalletTransferRequest represents a request to move funds between wallets (e.g. main → disbursement)
+type WalletTransferRequest struct {
+	FromAccountNo   string `json:"fromAccountNo"`   // Source wallet account number
+	ToAccountNo     string `json:"toAccountNo"`     // Destination wallet account number
+	Amount          int    `json:"amount"`          // Amount to transfer
+	Narration       string `json:"narration"`       // Transfer description
+	TransactionRef  string `json:"transactionRef"`  // Your unique reference
+	TransactionDate string `json:"transactionDate"` // Date in format YYYY-MM-DD HH:mm:ss
+}
+
+// WalletTransferResponse represents the response for a wallet transfer
+type WalletTransferResponse struct {
+	StatusCode     string `json:"statusCode"`     // PENDING_ACK, PAYMENT_REJECTED, GENERIC_ERROR
+	TransactionRef string `json:"transactionRef"` // Your system reference
+	TransactionID  string `json:"transactionId"`  // TemboPlus transaction ID
 }

@@ -27,10 +27,13 @@ func main() {
 		AccountID:  os.Getenv("ACCOUNT_ID"), // Your x-account-id
 		SecretKey:  os.Getenv("SECRET_KEY"), // Your x-secret-key
 		Timeout:    30 * time.Second,
+		Debug:      true,
 	})
 
 	// Example 1: Simple mobile money collection
-	mobileMoneyCollectionExample(client)
+	// mobileMoneyCollectionExample(client)
+	// walletToMobileExample(client)
+	transferToDisbursementExample(client)
 
 	return
 
@@ -177,16 +180,16 @@ func walletToMobileExample(client *temboplus.Client) {
 	ctx := context.Background()
 	req := temboplus.WalletToMobileRequest{
 		CountryCode:     "TZ",
-		AccountNo:       "8000837333", // replace with your main/customer wallet account no
-		ServiceCode:     temboplus.ServiceTZTigoB2C,
+		AccountNo:       "9000073661", // replace with your main/customer wallet account no
+		ServiceCode:     temboplus.ServiceTZVodacomB2C,
 		Amount:          2500,
-		MSISDN:          temboplus.FormatMSISDN("0715123456"),
-		Narration:       "Payout - Order #123",
+		MSISDN:          temboplus.FormatMSISDN("255 766 830 977"),
+		Narration:       "Payout1",
 		CurrencyCode:    "TZS",
-		RecipientNames:  "John Doe",
+		RecipientNames:  "Yussuf Zakaria",
 		TransactionRef:  temboplus.GenerateTransactionRef("PAYOUT"),
 		TransactionDate: temboplus.FormatTransactionDate(time.Now()),
-		CallbackURL:     "https://your-app.com/webhooks/temboplus",
+		CallbackURL:     "https://webhook.site/4aa64b68-f0b9-417a-ad79-63bad77b3f90",
 	}
 	resp, err := client.PayWalletToMobile(ctx, req)
 	if err != nil {
@@ -587,6 +590,29 @@ func formatCurrency(amount float64) string {
 func logTransaction(transactionRef, transactionID, status string) {
 	timestamp := time.Now().Format(time.RFC3339)
 	log.Printf("[%s] Transaction %s (%s): %s", timestamp, transactionRef, transactionID, status)
+}
+
+func transferToDisbursementExample(client *temboplus.Client) {
+	fmt.Println("=== Transfer to Disbursement Wallet ===")
+	ctx := context.Background()
+
+	req := temboplus.WalletTransferRequest{
+		FromAccountNo:   os.Getenv("MAIN_ACCOUNT_NO"),        // e.g. your main wallet account number
+		ToAccountNo:     os.Getenv("DISBURSEMENT_ACCOUNT_NO"), // e.g. your disbursement wallet account number
+		Amount:          50000,
+		Narration:       "Fund disbursement wallet",
+		TransactionRef:  temboplus.GenerateTransactionRef("TRANSFER"),
+		TransactionDate: temboplus.FormatTransactionDate(time.Now()),
+	}
+
+	resp, err := client.TransferToDisbursement(ctx, req)
+	if err != nil {
+		log.Printf("Transfer error: %v", err)
+		return
+	}
+
+	fmt.Printf("Transfer submitted. Status: %s, TxnID: %s, Ref: %s\n\n",
+		resp.StatusCode, resp.TransactionID, resp.TransactionRef)
 }
 
 // Example of how to start the webhook server

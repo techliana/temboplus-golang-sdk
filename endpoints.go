@@ -23,6 +23,7 @@ const (
 	EndpointPaymentStatus         = "/tembo/v1/payment/status"
 
 	// Wallet management
-	EndpointWalletList    = "/tembo/v1/wallet"
-	EndpointWalletBalance = "/tembo/v1/wallet/balance"
+	EndpointWalletList     = "/tembo/v1/wallet"
+	EndpointWalletBalance  = "/tembo/v1/wallet/balance"
+	EndpointWalletTransfer = "/tembo/v1/wallet/transfer"
 )

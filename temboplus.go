@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type Client struct {
 	accountID  string
 	secretKey  string
 	httpClient *http.Client
+	IsDebug    bool
 }
 
 // ClientConfig holds configuration for the TemboPlus client
@@ -24,6 +26,7 @@ type ClientConfig struct {
 	AccountID  string        // Your account ID (x-account-id)
 	SecretKey  string        // Your secret key (x-secret-key)
 	Timeout    time.Duration // Default: 30 seconds
+	Debug      bool          // When true, logs formatted request and response bodies
 }
 type Environment string
 
@@ -47,6 +50,7 @@ func NewClient(config ClientConfig) *Client {
 		baseURL:   baseUrl,
 		accountID: config.AccountID,
 		secretKey: config.SecretKey,
+		IsDebug:   config.Debug,
 		httpClient: &http.Client{
 			Timeout: config.Timeout,
 		},
@@ -65,14 +69,30 @@ func generateRequestID() string {
 	return fmt.Sprintf("req_%d", time.Now().UnixNano())
 }
 
+// logDebug prints a labelled, pretty-printed JSON payload when IsDebug is true.
+func (c *Client) logDebug(label string, data []byte) {
+	if !c.IsDebug {
+		return
+	}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, data, "", "  "); err != nil {
+		fmt.Printf("[DEBUG] %s: %s\n", label, string(data))
+		return
+	}
+	fmt.Printf("[DEBUG] %s:\n%s\n", label, buf.String())
+}
+
 // makeRequest handles HTTP requests to the TemboPlus API
-func (c *Client) makeRequest(ctx context.Context, method, endpoint string, payload interface{}) (*MobileMoneyCollectionResponse, error) {
+func (c *Client) makeRequest(ctx context.Context, method, endpoint string, payload any) (*MobileMoneyCollectionResponse, error) {
 	var body io.Reader
+	var jsonData []byte
 	if payload != nil {
-		jsonData, err := json.Marshal(payload)
+		var err error
+		jsonData, err = json.Marshal(payload)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal request: %w", err)
 		}
+		c.logDebug(">> Request "+method+" "+endpoint, jsonData)
 		body = bytes.NewBuffer(jsonData)
 	}
 
@@ -98,6 +118,7 @@ func (c *Client) makeRequest(ctx context.Context, method, endpoint string, paylo
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	c.logDebug("<< Response "+endpoint, respBody)
 
 	// If HTTP status is not OK, try to unmarshal API error wrapper
 	if resp.StatusCode != http.StatusOK {
@@ -189,6 +210,7 @@ func (c *Client) ValidateWebhook(payload []byte) (*WebhookPayload, error) {
 // GetCollectionBalance retrieves the balance of the collection account
 func (c *Client) GetCollectionBalance(ctx context.Context) (*CollectionBalanceResponse, error) {
 	url := c.baseURL + EndpointWalletCollectionBalance
+	c.logDebug(">> Request POST "+EndpointWalletCollectionBalance, []byte("{}"))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
@@ -211,6 +233,7 @@ func (c *Client) GetCollectionBalance(ctx context.Context) (*CollectionBalanceRe
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	c.logDebug("<< Response "+EndpointWalletCollectionBalance, body)
 
 	if resp.StatusCode != http.StatusOK {
 		var apiErr APIError
@@ -231,6 +254,7 @@ func (c *Client) GetCollectionBalance(ctx context.Context) (*CollectionBalanceRe
 // GetMainBalance retrieves the balance of the main account
 func (c *Client) GetMainBalance(ctx context.Context) (*CollectionBalanceResponse, error) {
 	url := c.baseURL + EndpointWalletMainBalance
+	c.logDebug(">> Request POST "+EndpointWalletMainBalance, []byte("{}"))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
@@ -253,6 +277,7 @@ func (c *Client) GetMainBalance(ctx context.Context) (*CollectionBalanceResponse
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	c.logDebug("<< Response "+EndpointWalletMainBalance, body)
 
 	if resp.StatusCode != http.StatusOK {
 		var apiErr APIError
@@ -279,6 +304,7 @@ func (c *Client) GetCollectionStatement(ctx context.Context, reqBody CollectionS
 	}
 
 	url := c.baseURL + EndpointWalletCollectionStatement
+	c.logDebug(">> Request POST "+EndpointWalletCollectionStatement, payload)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -300,6 +326,7 @@ func (c *Client) GetCollectionStatement(ctx context.Context, reqBody CollectionS
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	c.logDebug("<< Response "+EndpointWalletCollectionStatement, body)
 
 	if resp.StatusCode != http.StatusOK {
 		var apiErr APIError
@@ -324,6 +351,7 @@ func (c *Client) GetMainStatement(ctx context.Context, reqBody CollectionStateme
 	}
 
 	url := c.baseURL + EndpointWalletMainStatement
+	c.logDebug(">> Request POST "+EndpointWalletMainStatement, payload)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -344,6 +372,7 @@ func (c *Client) GetMainStatement(ctx context.Context, reqBody CollectionStateme
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	c.logDebug("<< Response "+EndpointWalletMainStatement, body)
 
 	if resp.StatusCode != http.StatusOK {
 		var apiErr APIError
@@ -386,14 +415,23 @@ const (
 	StatusGenericError    = "GENERIC_ERROR"
 )
 
-// Constants for supported channels
+// Constants for supported channels (C2B) and services (B2C)
 const (
-	ChannelTZTigoC2B    = "TZ-TIGO-C2B"
-	ChannelTZHalotelC2B = "TZ-HALOTEL-C2B"
-	ChannelTZAirtelC2B  = "TZ-AIRTEL-C2B"
-	ServiceTZTigoB2C    = "TZ-TIGO-B2C"
-	ServiceTZAirtelB2C  = "TZ-AIRTEL-B2C"
-	ServiceTZBankB2C    = "TZ-BANK-B2C"
+	// Tanzania C2B channels (mobile money collection)
+	ChannelTZTigoC2B    = "TZ-TIGO-C2B"    // Mixx by Yas (formerly Tigo Pesa) - Honora Tanzania
+	ChannelTZHalotelC2B = "TZ-HALOTEL-C2B" // HaloPesa - Viettel Tanzania (Halotel)
+	ChannelTZAirtelC2B  = "TZ-AIRTEL-C2B"  // Airtel Money - Airtel Tanzania
+	ChannelTZVodacomC2B = "TZ-VODACOM-C2B" // M-Pesa - Vodacom Tanzania
+
+	// Tanzania B2C services (wallet-to-mobile payouts)
+	ServiceTZAirtelB2C  = "TZ-AIRTEL-B2C"  // Airtel Money - Airtel Tanzania
+	ServiceTZVodacomB2C = "TZ-VODACOM-B2C" // M-Pesa - Vodacom Tanzania
+	ServiceTZTigoB2C    = "TZ-TIGO-B2C"    // Mixx by Yas (formerly Tigo Pesa) - Honora Tanzania
+	ServiceTZHalotelB2C = "TZ-HALOTEL-B2C" // HaloPesa - Viettel Tanzania (Halotel)
+	ServiceTZBankB2C    = "TZ-BANK-B2C"    // Bank payout
+
+	// Kenya B2C services (wallet-to-mobile payouts)
+	ServiceKESafaricomB2C = "KE-SAFARICOM-B2C" // M-Pesa - Safaricom Kenya
 )
 
 // Helper functions
@@ -404,6 +442,7 @@ func GetSupportedChannels() []string {
 		ChannelTZTigoC2B,
 		ChannelTZAirtelC2B,
 		ChannelTZHalotelC2B,
+		ChannelTZVodacomC2B,
 	}
 }
 
@@ -421,9 +460,12 @@ func isValidChannel(channel string) bool {
 // GetSupportedServices returns supported wallet-to-mobile service codes
 func GetSupportedServices() []string {
 	return []string{
-		ServiceTZTigoB2C,
 		ServiceTZAirtelB2C,
+		ServiceTZVodacomB2C,
+		ServiceTZTigoB2C,
+		ServiceTZHalotelB2C,
 		ServiceTZBankB2C,
+		ServiceKESafaricomB2C,
 	}
 }
 
@@ -439,6 +481,8 @@ func isValidService(service string) bool {
 
 // FormatMSISDN formats a phone number to the required MSISDN format (255XXX123456)
 func FormatMSISDN(phoneNumber string) string {
+	// remove spaces, dashes, and parentheses
+	phoneNumber = strings.ReplaceAll(phoneNumber, " ", "")
 	// Remove any leading + or 0
 	if len(phoneNumber) > 0 && phoneNumber[0] == '+' {
 		phoneNumber = phoneNumber[1:]
@@ -480,9 +524,13 @@ func IsFailedWebhook(webhook *WebhookPayload) bool {
 func GetChannelProvider(channel string) string {
 	switch channel {
 	case ChannelTZTigoC2B:
-		return "Tigo"
+		return "Mixx by Yas (Tigo)"
 	case ChannelTZAirtelC2B:
 		return "Airtel"
+	case ChannelTZHalotelC2B:
+		return "HaloPesa"
+	case ChannelTZVodacomC2B:
+		return "M-Pesa (Vodacom)"
 	default:
 		return "Unknown"
 	}
@@ -520,6 +568,7 @@ func BuildCollectionRequest(phoneNumber string, channel string, amount int, desc
 // ListWallets retrieves all wallets associated with the account
 func (c *Client) ListWallets(ctx context.Context) ([]Wallet, error) {
 	url := c.baseURL + EndpointWalletList
+	c.logDebug(">> Request GET "+EndpointWalletList, []byte("{}"))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -542,6 +591,7 @@ func (c *Client) ListWallets(ctx context.Context) ([]Wallet, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	c.logDebug("<< Response "+EndpointWalletList, body)
 
 	if resp.StatusCode != http.StatusOK {
 		var apiErr APIError
@@ -571,6 +621,7 @@ func (c *Client) GetWalletBalance(ctx context.Context, accountNo string) (*Colle
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
+	c.logDebug(">> Request POST "+EndpointWalletBalance, jsonBody)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonBody))
 	if err != nil {
@@ -593,6 +644,7 @@ func (c *Client) GetWalletBalance(ctx context.Context, accountNo string) (*Colle
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	c.logDebug("<< Response "+EndpointWalletBalance, body)
 
 	if resp.StatusCode != http.StatusOK {
 		var apiErr APIError
@@ -608,6 +660,71 @@ func (c *Client) GetWalletBalance(ctx context.Context, accountNo string) (*Colle
 	}
 
 	return &balance, nil
+}
+
+// TransferToDisbursement moves funds from one wallet to another (e.g. main wallet → disbursement wallet)
+func (c *Client) TransferToDisbursement(ctx context.Context, req WalletTransferRequest) (*WalletTransferResponse, error) {
+	if req.FromAccountNo == "" {
+		return nil, fmt.Errorf("fromAccountNo is required")
+	}
+	if req.ToAccountNo == "" {
+		return nil, fmt.Errorf("toAccountNo is required")
+	}
+	if req.Amount <= 0 {
+		return nil, fmt.Errorf("amount must be greater than 0")
+	}
+	if req.Narration == "" {
+		return nil, fmt.Errorf("narration is required")
+	}
+	if req.TransactionRef == "" {
+		return nil, fmt.Errorf("transactionRef is required")
+	}
+	if req.TransactionDate == "" {
+		return nil, fmt.Errorf("transactionDate is required")
+	}
+
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+	c.logDebug(">> Request POST "+EndpointWalletTransfer, jsonData)
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+EndpointWalletTransfer, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-account-id", c.accountID)
+	httpReq.Header.Set("x-secret-key", c.secretKey)
+	httpReq.Header.Set("x-request-id", generateRequestID())
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	c.logDebug("<< Response "+EndpointWalletTransfer, body)
+
+	if resp.StatusCode != http.StatusOK {
+		var apiErr APIError
+		if err := json.Unmarshal(body, &apiErr); err == nil && apiErr.StatusCode != 0 {
+			return nil, apiErr
+		}
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var result WalletTransferResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &result, nil
 }
 
 // PayWalletToBank is a convenience wrapper for bank payouts (TZ-BANK-B2C)
