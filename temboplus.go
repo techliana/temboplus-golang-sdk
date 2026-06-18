@@ -61,6 +61,9 @@ func (e Error) Error() string {
 	if e.Message != "" {
 		return fmt.Sprintf("API Error [%s]: %s", e.StatusCode, e.Message)
 	}
+	if e.Details != "" {
+		return fmt.Sprintf("API Error [%s]: %s %s", e.StatusCode, e.Message, e.Details)
+	}
 	return fmt.Sprintf("API Error: %s", e.StatusCode)
 }
 

@@ -7,13 +7,13 @@ import (
 
 // MobileMoneyCollectionRequest represents a mobile money collection request
 type MobileMoneyCollectionRequest struct {
-	MSISDN          string  `json:"msisdn"`          // Phone number in format 255XXX123456
-	Channel         string  `json:"channel"`         // MNO channel (TZ-TIGO-C2B, TZ-AIRTEL-C2B, TZ-HALOTEL-C2B, TZ-VODACOM-C2B)
-	Amount          int     `json:"amount"`          // Amount to collect
-	Narration       string  `json:"narration"`       // Description/narration
-	TransactionRef  string  `json:"transactionRef"`  // Your system reference
-	TransactionDate string  `json:"transactionDate"` // Date in format YYYY-MM-DD HH:mm:ss
-	CallbackURL     string  `json:"callbackUrl"`     // Webhook callback URL
+	MSISDN          string `json:"msisdn"`          // Phone number in format 255XXX123456
+	Channel         string `json:"channel"`         // MNO channel (TZ-TIGO-C2B, TZ-AIRTEL-C2B, TZ-HALOTEL-C2B, TZ-VODACOM-C2B)
+	Amount          int    `json:"amount"`          // Amount to collect
+	Narration       string `json:"narration"`       // Description/narration
+	TransactionRef  string `json:"transactionRef"`  // Your system reference
+	TransactionDate string `json:"transactionDate"` // Date in format YYYY-MM-DD HH:mm:ss
+	CallbackURL     string `json:"callbackUrl"`     // Webhook callback URL
 }
 
 // MobileMoneyCollectionResponse represents the API response
@@ -52,6 +52,10 @@ func (e APIError) Error() string {
 	}
 	if e.Message != "" {
 		return fmt.Sprintf("API Error [%d]: %s %s", e.StatusCode, e.Message, e.Reason)
+	}
+	// also respond with details
+	if e.Details != nil {
+		return fmt.Sprintf("API Error [%d]: %s %s %s", e.StatusCode, e.Message, e.Reason, string(e.Details))
 	}
 	return fmt.Sprintf("Api Error [%d]", e.StatusCode)
 }
