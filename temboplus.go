@@ -58,13 +58,14 @@ func NewClient(config ClientConfig) *Client {
 }
 
 func (e Error) Error() string {
+	msg := fmt.Sprintf("API Error [%s]", e.StatusCode)
 	if e.Message != "" {
-		return fmt.Sprintf("API Error [%s]: %s", e.StatusCode, e.Message)
+		msg += ": " + e.Message
 	}
 	if e.Details != "" {
-		return fmt.Sprintf("API Error [%s]: %s %s", e.StatusCode, e.Message, e.Details)
+		msg += ": " + e.Details
 	}
-	return fmt.Sprintf("API Error: %s", e.StatusCode)
+	return msg
 }
 
 // generateRequestID creates a unique request ID for the x-request-id header

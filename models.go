@@ -47,17 +47,17 @@ type APIError struct {
 }
 
 func (e APIError) Error() string {
+	msg := fmt.Sprintf("API Error [%d]", e.StatusCode)
 	if e.Reason != "" {
-		return fmt.Sprintf("API Error [%d]: %s %s", e.StatusCode, e.Reason, e.Message)
+		msg += ": " + e.Reason
 	}
 	if e.Message != "" {
-		return fmt.Sprintf("API Error [%d]: %s %s", e.StatusCode, e.Message, e.Reason)
+		msg += ": " + e.Message
 	}
-	// also respond with details
-	if e.Details != nil {
-		return fmt.Sprintf("API Error [%d]: %s %s %s", e.StatusCode, e.Message, e.Reason, string(e.Details))
+	if len(e.Details) > 0 {
+		msg += ": " + string(e.Details)
 	}
-	return fmt.Sprintf("Api Error [%d]", e.StatusCode)
+	return msg
 }
 
 // CollectionBalanceResponse represents the response for collection account balance
